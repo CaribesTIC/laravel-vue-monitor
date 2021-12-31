@@ -1,32 +1,30 @@
 <?php
 namespace App\Http\Services\Scraper;
 
-use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Http\Request;
-use Goutte\Client;
-use PhpParser\Node\Expr\Print_;
+//use PhpParser\Node\Expr\Print_;
 use App\Models\Product;
-use App\GeneralSettings;
+use Goutte\Client;
 
 class ScraperService
 {
-    private $_client;    
+    private $_client;
 
-    public function get(Request $request, GeneralSettings $settings): LengthAwarePaginator
+    public function get(): Array
     {
-        $products = Product::select("name","url_path", "img_path")->paginate($settings->default_pagination);        
+        $products = Product::select("name","url_path", "img_path")->get();        
         $this->_client = new Client();
         foreach ($products as $product) {
-            $scraper = $this->_scraper($product["url_path"]);
-            $isArray = is_array($scraper);
-            $product["price"] = $isArray ? $scraper["price"] : $scraper;
-            $product["offer"] = $isArray ? $scraper["offer"] : $scraper;
-            $product["save"] = $isArray ? $scraper["save"] : $scraper;
+            $scraper = $this->_scraper($product["url_path"]);            
+            $product["price"] = $scraper ? $scraper["price"] : $scraper;
+            $product["offer"] = $scraper ? $scraper["offer"] : $scraper;
+            $product["saving"] = $scraper ? $scraper["saving"] : $scraper; 
+            $product["percentage"] = $scraper ? $scraper["percentage"] : $scraper;
         }
-        return $products;
+
+        return $products->sortBy("percentage")->reverse()->toArray();
     }
 
-    private function _scraper(String $url): Array | String
+    private function _scraper(String $url): Array | null
     {
         try {
             $response = $this->_client->request('POST', $url); //echo "<pre>";print_r($response);
@@ -38,11 +36,13 @@ class ScraperService
             return [
                 "price" => explode("US", $values[0])[1],
                 "offer" => explode("US", $values[1])[1],
-                "save"  => explode("US", $values[2])[2]
+                "saving"  => explode("US", $values[2])[1],
+                "percentage" => explode(" ", explode("US", $values[2])[2])[1]
             ];            
         } catch(\Symfony\Component\HttpClient\Exception\TransportException | \Exception | \Throwable $exception) {
-            return "Node empty";//$exception->getMessage();//die( $exception->getMessage() );
+            return null;//$exception->getMessage();//die( $exception->getMessage() );
         }       
     }
     
 }
+
