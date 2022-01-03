@@ -94,7 +94,7 @@ export default {
       productsNew = this.objToArr(productsNew)
       productsNew.forEach(productNew => {
         let xproductOld = productsOld.find(productOld => productOld.name === productNew.name)
-        if (!productNew.price) {
+        if (productNew.percentage === "(0%)") {
           productNew.price = xproductOld.price
           productNew.offer = xproductOld.offer
           productNew.saving = xproductOld.saving
@@ -135,3 +135,4 @@ export default {
   }
 };
 </script>
+

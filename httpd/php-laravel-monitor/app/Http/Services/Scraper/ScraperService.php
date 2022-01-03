@@ -9,7 +9,7 @@ class ScraperService
 {
     private $_client;
 
-    public function get(): Array
+    public function get(): array
     {
         $products = Product::select("name","url_path", "img_path")->get();        
         $this->_client = new Client();
@@ -24,12 +24,12 @@ class ScraperService
         return $products->sortBy("percentage")->reverse()->toArray();
     }
 
-    private function _scraper(String $url): Array | null
+    private function _scraper(String $url): array
     {
         try {
-            $response = $this->_client->request('POST', $url); //echo "<pre>";print_r($response);
+            $crawler = $this->_client->request('POST', $url); //echo "<pre>";print_r($crawler);
 
-            $values = $response
+            $values = $crawler
                 ->filter("table[class='a-lineitem a-align-top'] > tr")
                 ->each( fn($node) => $node->text() );                       
 
@@ -40,7 +40,12 @@ class ScraperService
                 "percentage" => explode(" ", explode("US", $values[2])[2])[1]
             ];            
         } catch(\Symfony\Component\HttpClient\Exception\TransportException | \Exception | \Throwable $exception) {
-            return null;//$exception->getMessage();//die( $exception->getMessage() );
+            return [
+                "price" => "Sin oferta",
+                "offer" => "Sin oferta",
+                "saving"  => "Sin oferta",
+                "percentage" => "(0%)"
+            ];//$exception->getMessage();//die( $exception->getMessage() );
         }       
     }
     
